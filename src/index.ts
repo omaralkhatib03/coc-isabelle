@@ -215,8 +215,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
     client.onReady().then(() => {
         client.onNotification("PIDE/dynamic_output", (params: DynamicOutput) => {
 
-            const removeFileSubstrings = (x:string) => x.replace(/file:[^ ]+?#\d+/g, '');
-
             async function writeToBuffer (strings:string[]) {
                 try {
                     const isaOutputBufferNr = await workspace.nvim.call('bufnr', ['-OUTPUT-'])
@@ -231,15 +229,14 @@ export async function activate(context: ExtensionContext): Promise<void> {
             let els:string[] = params.content.split("\n")
             let mnstrs:string[] = []
 
-
             for (let i = 0; i < els.length; i++)
             {
-              let mnTxt = htmlToText(els[i], {
+              const cleanedHtmlString = els[i].replace(/<a\b[^>]*>(.*?)<\/a>/gi, '$1');
+              let mnTxt = htmlToText(cleanedHtmlString, {
                   ignoreImage: true, 
                   ignoreHref: true,  
               });
-
-              mnstrs.push(removeFileSubstrings(mnTxt));
+              mnstrs.push(mnTxt);
             }
 
             try {
