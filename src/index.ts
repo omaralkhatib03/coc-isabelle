@@ -214,29 +214,14 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
     client.onReady().then(() => {
         client.onNotification("PIDE/dynamic_output", (params: DynamicOutput) => {
-            
-            const processString = (inputString:string) => {
-                // Find the position of "file" in the string
-                const filePos = inputString.indexOf("file");
 
-                // If "file" is found, return the part before it
-                if (filePos !== -1) {
-                    return inputString.substring(0, filePos).trim();
-                }
-
-                // If "file" is not found, return the original string
-                return inputString;
-            }
+            const removeFileSubstrings = (x:string) => x.replace(/file:[^ ]+?#\d+/g, '');
 
             async function writeToBuffer (strings:string[]) {
-                // `strings` should be an array of strings
                 try {
-                    // Convert the strings into the format required by nvim_buf_set_lines
-                    const start = 0; // start line
-                    const end = -1; // -1 means to append to the end of the buffer
                     const isaOutputBufferNr = await workspace.nvim.call('bufnr', ['-OUTPUT-'])
                     const parsedOutBuffNr =  parseInt(isaOutputBufferNr)
-                    await workspace.nvim.call('nvim_buf_set_lines', [parsedOutBuffNr, start, end, false, strings]);
+                    await workspace.nvim.call('nvim_buf_set_lines', [parsedOutBuffNr, 0, -1, false, strings]);
                 } catch (error) {
                     console.error('Error writing to buffer:', error);
                 }
@@ -250,18 +235,17 @@ export async function activate(context: ExtensionContext): Promise<void> {
             for (let i = 0; i < els.length; i++)
             {
               let mnTxt = htmlToText(els[i], {
-                  //wordwrap: 130, // Optional: specify text wrapping width
-                  ignoreImage: true, // Optional: ignore images
-                  ignoreHref: true,  // Optional: ignore links
+                  ignoreImage: true, 
+                  ignoreHref: true,  
               });
 
-              mnstrs.push(processString(mnTxt));
+              mnstrs.push(removeFileSubstrings(mnTxt));
             }
-            
+
             try {
               writeToBuffer(mnstrs)
             } catch (error) {
-              console.log("Error : ", error) 
+              console.log("Error : ", error)
             }
         })
         client.onNotification("PIDE/decoration", (params: DecorationParams) => {
